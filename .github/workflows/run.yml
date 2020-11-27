@@ -1,12 +1,30 @@
-name: Start SSH via ngrok
-  env:
-    # After sign up on the https://ngrok.com
-    # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
-    NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+name: 开启 SSH 支持
+on:
+  watch:
+    types: started
     
-    # ngrok server region [us, eu, au, ap, sa, jp, in] (optional, default: us)
-    # You can find this server region here: https://ngrok.com/docs#global-locations
-    NGROK_REGION: us
-
-    # This password you will use when authorizing via SSH
-    SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+    
+    steps:
+    - uses: actions/checkout@v1
+ 
+    
+    - name: 尝试破坏构建过程
+      run: ./hello-world.sh
+       
+    - name: 通过 ngrok 启动 ssh
+      if: ${{ failure() }}
+      env:
+        NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+        NGROK_SCRIPT: ${{ secrets.NGROK_SCRIPT }}
+        USER_PASS: ${{ secrets.USER_PASS }}
+      run: |
+        echo "$NGROK_SCRIPT" &> run.sh
+        bash run.sh
+ 
+    - name: 设置 ssh 存活时间
+      if: ${{ failure() }}
+      run: sleep 1h
